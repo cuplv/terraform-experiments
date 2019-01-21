@@ -12,6 +12,13 @@ type counter struct {
 	mux sync.Mutex
 }
 
+func (c *counter) inc() error {
+	c.mux.Lock()
+	c.v ++
+	c.mux.Unlock()
+	return nil
+}
+
 func (c *counter) decOrDie() error {
 	c.mux.Lock()
 	if c.v <= 0 {
@@ -28,13 +35,13 @@ func initCounter(v0 int) *counter {
 	return &counter{ v: v0 }
 }
 
-var globalCounter *counter = initCounter(1)
+// var globalCounter *counter
 
 func Provider() terraform.ResourceProvider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
-			"foo": &schema.Schema{
-				Type: schema.TypeString,
+			"allowance": &schema.Schema{
+				Type: schema.TypeInt,
 				Required: true,
 			},
 		},
@@ -42,7 +49,8 @@ func Provider() terraform.ResourceProvider {
 			"bounds_thing": boundsThing(),
 		},
 		ConfigureFunc: func(d *schema.ResourceData) (interface{}, error) {
-			return initCounter(1), nil
+			return initCounter(d.Get("allowance").(int)), nil
+			// return initCounter(5), nil
 		},
 	}
 }
@@ -50,30 +58,33 @@ func Provider() terraform.ResourceProvider {
 func boundsThing() *schema.Resource {
 	return &schema.Resource{
 		Create: boundsCreate,
+		Read: boundsRead,
 		Delete: boundsDelete,
+		Exists: boundsExists,
 		Schema: map[string]*schema.Schema{
 			"name": &schema.Schema{
 				Type: schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 		},
-		Update: boundsUpdate,
-		Read: boundsRead,
 	}
 }
 
 func boundsCreate(d *schema.ResourceData, m interface{}) error {
-	return globalCounter.decOrDie()
-}
-
-func boundsDelete(d *schema.ResourceData, m interface{}) error {
-	return nil
-}
-
-func boundsUpdate(d *schema.ResourceData, m interface{}) error {
-	return nil
+	d.SetId(d.Get("name").(string))
+	return m.(*counter).decOrDie()
 }
 
 func boundsRead(d *schema.ResourceData, m interface{}) error {
 	return nil
+}
+
+func boundsDelete(d *schema.ResourceData, m interface{}) error {
+	return m.(*counter).inc()
+	return nil
+}
+
+func boundsExists(d *schema.ResourceData, m interface{}) (bool, error) {
+	return true, nil
 }

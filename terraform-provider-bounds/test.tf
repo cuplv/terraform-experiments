@@ -1,5 +1,5 @@
 provider "bounds" {
-  foo = "bar"
+  allowance = "1"
 }
 
 resource "bounds_thing" "example1" {
