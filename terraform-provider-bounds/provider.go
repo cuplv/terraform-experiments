@@ -37,8 +37,22 @@ func initCounter(v0 int) *counter {
 
 // var globalCounter *counter
 
+type BoundsProvider struct {
+	schema.Provider
+}
+
+func (p *BoundsProvider) Validate(c *terraform.ResourceConfig) ([]string, []error) {
+	s,e := p.Provider.Validate(c)
+	return append(s, "boundsinfo:budget:foo"), e
+}
+
+func (p *BoundsProvider) ValidateResource(t string, c *terraform.ResourceConfig) ([]string, []error) {
+	s,e := p.Provider.ValidateResource(t,c)
+	return append(s, "boundsinfo:cost:bar"), e
+}
+
 func Provider() terraform.ResourceProvider {
-	return &schema.Provider{
+	return &BoundsProvider{schema.Provider{
 		Schema: map[string]*schema.Schema{
 			"allowance": &schema.Schema{
 				Type: schema.TypeInt,
@@ -52,7 +66,7 @@ func Provider() terraform.ResourceProvider {
 			return initCounter(d.Get("allowance").(int)), nil
 			// return initCounter(5), nil
 		},
-	}
+	}}
 }
 
 func boundsThing() *schema.Resource {
