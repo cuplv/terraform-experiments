@@ -5,6 +5,7 @@ import (
 	"github.com/hashicorp/terraform/terraform"
 	"sync"
 	"errors"
+	"strconv"
 )
 
 type counter struct {
@@ -43,18 +44,18 @@ type BoundsProvider struct {
 
 func (p *BoundsProvider) Validate(c *terraform.ResourceConfig) ([]string, []error) {
 	s,e := p.Provider.Validate(c)
-	return append(s, "boundsinfo:budget:foo"), e
+	return append(s, "boundsinfo:budget;" + strconv.Itoa(c.Raw["budget"].(int))), e
 }
 
 func (p *BoundsProvider) ValidateResource(t string, c *terraform.ResourceConfig) ([]string, []error) {
 	s,e := p.Provider.ValidateResource(t,c)
-	return append(s, "boundsinfo:cost:bar"), e
+	return append(s, "boundsinfo:cost;1"), e
 }
 
 func Provider() terraform.ResourceProvider {
 	return &BoundsProvider{schema.Provider{
 		Schema: map[string]*schema.Schema{
-			"allowance": &schema.Schema{
+			"budget": &schema.Schema{
 				Type: schema.TypeInt,
 				Required: true,
 			},
@@ -63,8 +64,7 @@ func Provider() terraform.ResourceProvider {
 			"bounds_thing": boundsThing(),
 		},
 		ConfigureFunc: func(d *schema.ResourceData) (interface{}, error) {
-			return initCounter(d.Get("allowance").(int)), nil
-			// return initCounter(5), nil
+			return initCounter(d.Get("budget").(int)), nil
 		},
 	}}
 }
