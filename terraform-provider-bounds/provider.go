@@ -3,40 +3,8 @@ package main
 import (
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
-	"sync"
-	"errors"
 	"strconv"
 )
-
-type counter struct {
-	v int
-	mux sync.Mutex
-}
-
-func (c *counter) inc() error {
-	c.mux.Lock()
-	c.v ++
-	c.mux.Unlock()
-	return nil
-}
-
-func (c *counter) decOrDie() error {
-	c.mux.Lock()
-	if c.v <= 0 {
-		c.mux.Unlock()
-		return errors.New("Out of resources")
-	} else {
-		c.v --
-		c.mux.Unlock()
-		return nil
-	}
-}
-
-func initCounter(v0 int) *counter {
-	return &counter{ v: v0 }
-}
-
-// var globalCounter *counter
 
 type BoundsProvider struct {
 	schema.Provider
@@ -64,7 +32,7 @@ func Provider() terraform.ResourceProvider {
 			"bounds_thing": boundsThing(),
 		},
 		ConfigureFunc: func(d *schema.ResourceData) (interface{}, error) {
-			return initCounter(d.Get("budget").(int)), nil
+			return nil, nil
 		},
 	}}
 }
@@ -87,7 +55,7 @@ func boundsThing() *schema.Resource {
 
 func boundsCreate(d *schema.ResourceData, m interface{}) error {
 	d.SetId(d.Get("name").(string))
-	return m.(*counter).decOrDie()
+	return nil
 }
 
 func boundsRead(d *schema.ResourceData, m interface{}) error {
@@ -95,7 +63,6 @@ func boundsRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func boundsDelete(d *schema.ResourceData, m interface{}) error {
-	return m.(*counter).inc()
 	return nil
 }
 
